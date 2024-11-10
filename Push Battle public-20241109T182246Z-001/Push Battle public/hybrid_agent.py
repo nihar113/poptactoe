@@ -84,11 +84,13 @@ class HybridAgent:
         
     def get_heuristic(self, game, color):
         """Returns the heuristic value of a position."""
+        opposite = -1
+        if color == -1:
+            opposite = 1
         par = 0
         tri = 0
         for i in range(8):
             for j in range(8):
-                # pair
                 if game.board[i][j] != color:
                     continue
                 if (game.board[(i+7)%8][(j+1)%8] == color):
@@ -108,7 +110,55 @@ class HybridAgent:
                     tri+=1
                 if (game.board[i][(j+6)%8] == color and game.board[(i+6)%8][j] == color):
                     tri+=1
-        return (3*par)+tri
+        mindist = 4
+        has = []
+        for i in range(8):
+            for j in range(8):
+                if game.board[i][j] == color:
+                    has.append((i,j))
+        for x in has:
+            for y in has:
+                if x == y:
+                    continue
+                dx = min(abs(x[0] - y[0]), 8 - abs(x[0] - y[0]))
+                dy = min(abs(x[1] - y[1]), 8 - abs(x[1] - y[1]))
+                mindist = min(mindist, max(dx, dy))
+        badpar = 0
+        badtri = 0
+        for i in range(8):
+            for j in range(8):
+                if game.board[i][j] != opposite:
+                    continue
+                if (game.board[(i+7)%8][(j+1)%8] == opposite):
+                    badpar+=1
+                if (game.board[i][(j+1)%8] == opposite):
+                    badpar+=1
+                if (game.board[(i+1)%8][(j+1)%8] == opposite):
+                    badpar+=1
+                if (game.board[(i+1)%8][j] == opposite):
+                    badpar+=1
+                # triangle
+                if (game.board[(i+6)%8][j] == opposite and game.board[i][(j+2)%8] == opposite):
+                    badtri+=1
+                if (game.board[i][(j+2)%8] == opposite and game.board[(i+2)%8][j] == opposite):
+                    badtri+=1
+                if (game.board[(i+2)%8][j] == opposite and game.board[i][(j+6)%8] == opposite):
+                    badtri+=1
+                if (game.board[i][(j+6)%8] == opposite and game.board[(i+6)%8][j] == opposite):
+                    badtri+=1
+        badmindist = 4
+        has = []
+        for i in range(8):
+            for j in range(8):
+                if game.board[i][j] == opposite:
+                    has.append((i,j))
+        for x in has:
+            for y in has:
+                if x == y:
+                    continue
+                dx = min(abs(x[0] - y[0]), 8 - abs(x[0] - y[0]))
+                dy = min(abs(x[1] - y[1]), 8 - abs(x[1] - y[1]))
+        return (3*par + tri) - (3 * badpar + badtri)
     
     def get_best_move(self, game):
         """Returns the best move using the Minimax algorithm."""
@@ -118,7 +168,7 @@ class HybridAgent:
         
         best_heuristic_move = None
         best_heuristic_value = float('-inf')
-        
+
         for move in possible_moves:
             new_game = copy.deepcopy(game)
             if len(move) == 2:
@@ -129,9 +179,9 @@ class HybridAgent:
             move_value = self.minimax(new_game, self.depth - 1, game.current_player == self.player)
 
             if game.current_player == PLAYER1:
-                heuristic_value = self.get_heuristic(new_game, 'W')
+                heuristic_value = self.get_heuristic(new_game, 1)
             else:
-                heuristic_value = self.get_heuristic(new_game, 'B')
+                heuristic_value = self.get_heuristic(new_game, -1)
             
             if heuristic_value > best_heuristic_value:
                 best_heuristic_move = move
